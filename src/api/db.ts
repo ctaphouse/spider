@@ -26,14 +26,24 @@ export function getRow(tableName: string, pk: string, id: string): Row | null {
 }
 
 export function insertRow(tableName: string, pk: string, data: Row): Row {
-  const keys = Object.keys(data).filter((k) => k !== pk);
-  const cols = keys.map((k) => `"${k}"`).join(", ");
-  const placeholders = keys.map(() => "?").join(", ");
-  const values = keys.map((k) => data[k] ?? null);
   const db = getDb();
+
+  // Since PK columns were not declared INTEGER PRIMARY KEY, rowid != PK value.
+  // Explicitly compute the next PK so we can retrieve the row by it afterward.
+  const rowData = { ...data };
+  if (rowData[pk] == null) {
+    const { next } = db
+      .query(`SELECT COALESCE(MAX("${pk}"), 0) + 1 AS next FROM "${tableName}"`)
+      .get() as { next: number };
+    rowData[pk] = next;
+  }
+
+  const keys = Object.keys(rowData);
+  const cols  = keys.map((k) => `"${k}"`).join(", ");
+  const placeholders = keys.map(() => "?").join(", ");
+  const values = keys.map((k) => rowData[k] ?? null);
   db.run(`INSERT INTO "${tableName}" (${cols}) VALUES (${placeholders})`, values);
-  const { id } = db.query("SELECT last_insert_rowid() AS id").get() as { id: number };
-  return getRow(tableName, pk, String(id))!;
+  return getRow(tableName, pk, String(rowData[pk]))!;
 }
 
 export function updateRow(

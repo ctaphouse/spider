@@ -9,8 +9,9 @@ export function createTable(db: Database, table: TableDef): void {
   const cols = table.columns
     .map((c) => `  "${c.name}" ${c.type}${c.nullable ? "" : " NOT NULL"}`)
     .join(",\n");
-  const sql = `CREATE TABLE IF NOT EXISTS "${table.name}" (\n${cols}\n);`;
-  db.run(sql);
+  // Drop first so re-running the conversion always produces a clean result
+  db.run(`DROP TABLE IF EXISTS "${table.name}";`);
+  db.run(`CREATE TABLE "${table.name}" (\n${cols}\n);`);
 }
 
 export function insertRows(
