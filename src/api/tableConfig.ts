@@ -30,7 +30,7 @@ export const TABLE_CONFIGS: Record<string, TableConfig> = {
       { column: "PasscodeID",      refTable: "passcodes",      refPk: "PasscodeID",      refLabel: "Comment"       },
       { column: "CategoryID",      refTable: "categories",     refPk: "CategoryID",      refLabel: "Category"      },
       { column: "PaymentMethodID", refTable: "paymentMethods", refPk: "PaymentMethodID", refLabel: "PaymentMethod" },
-      { column: "StatusId",        refTable: "statuses",       refPk: "Id",              refLabel: "Name"          },
+      { column: "StatusId",        refTable: "statuses",       refPk: "Id",              refLabel: "Status"        },
     ],
   },
   categories: {
@@ -61,7 +61,7 @@ export const TABLE_CONFIGS: Record<string, TableConfig> = {
     tableName: "tblStatus",
     apiRoute: "statuses",
     pk: "Id",
-    labelColumn: "Name",
+    labelColumn: "Status",
     sensitiveFields: [],
     fks: [],
   },
