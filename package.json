@@ -5,17 +5,19 @@
   "module": "src/index.ts",
   "type": "module",
   "scripts": {
-    "start":      "bun run src/index.ts",
-    "dev":        "bun --watch run src/index.ts",
-    "test":       "bun test",
-    "server":     "bun run src/server.ts",
+    "start": "bun run src/index.ts",
+    "dev": "bun --watch run src/index.ts",
+    "test": "bun test",
+    "server": "bun run src/server.ts",
     "server:dev": "bun --watch run src/server.ts",
-    "build:ui":   "bun build src/ui/main.tsx --outdir dist --target browser --minify"
+    "build:ui": "bun build src/ui/main.tsx --outdir dist --target browser --minify"
   },
   "devDependencies": {
+    "@tailwindcss/cli": "^4.2.4",
     "@types/bun": "latest",
     "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3"
+    "@types/react-dom": "^19.2.3",
+    "tailwindcss": "^4.2.4"
   },
   "dependencies": {
     "hono": "^4.12.18",

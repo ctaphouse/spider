@@ -10,6 +10,12 @@ interface Props {
   onChange: (name: string, value: unknown) => void;
 }
 
+const inputCls = [
+  "w-full px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white",
+  "focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400",
+  "transition-all placeholder:text-slate-400",
+].join(" ");
+
 export function FieldInput({ name, value, sensitive, fk, fkOptions, onChange }: Props) {
   const [revealed, setRevealed] = useState(false);
   const strVal = value != null ? String(value) : "";
@@ -17,7 +23,7 @@ export function FieldInput({ name, value, sensitive, fk, fkOptions, onChange }: 
   if (fk && fkOptions) {
     return (
       <select
-        style={styles.input}
+        className={inputCls + " cursor-pointer"}
         value={strVal}
         onChange={(e) => {
           const raw = e.target.value;
@@ -34,18 +40,18 @@ export function FieldInput({ name, value, sensitive, fk, fkOptions, onChange }: 
 
   if (sensitive) {
     return (
-      <div style={styles.sensitiveWrapper}>
+      <div className="flex items-center gap-1.5">
         <input
           type={revealed ? "text" : "password"}
-          style={{ ...styles.input, ...styles.sensitiveInput }}
+          className={inputCls + " font-mono flex-1"}
           value={strVal}
           autoComplete="off"
           onChange={(e) => onChange(name, e.target.value || null)}
         />
         <button
           type="button"
-          style={styles.revealBtn}
           title={revealed ? "Hide" : "Reveal"}
+          className="flex-shrink-0 text-slate-400 hover:text-indigo-500 text-sm transition-colors leading-none"
           onClick={() => setRevealed((v) => !v)}
         >
           {revealed ? "🙈" : "👁"}
@@ -57,38 +63,9 @@ export function FieldInput({ name, value, sensitive, fk, fkOptions, onChange }: 
   return (
     <input
       type="text"
-      style={styles.input}
+      className={inputCls}
       value={strVal}
       onChange={(e) => onChange(name, e.target.value || null)}
     />
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  input: {
-    width: "100%",
-    padding: "6px 8px",
-    border: "1px solid #cbd5e1",
-    borderRadius: 4,
-    fontSize: 13,
-    background: "#fff",
-  },
-  sensitiveWrapper: {
-    display: "flex",
-    alignItems: "center",
-    gap: 4,
-  },
-  sensitiveInput: {
-    width: "100%",
-    fontFamily: "monospace",
-  },
-  revealBtn: {
-    flexShrink: 0,
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    fontSize: 14,
-    padding: "2px 4px",
-    lineHeight: 1,
-  },
-};

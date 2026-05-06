@@ -139,43 +139,82 @@ export function TablePage({ apiRoute }: Props) {
     return true;
   });
 
-  if (loading) return <div style={styles.loading}>Loading…</div>;
-  if (!config)  return <div style={styles.loading}>Failed to load config.</div>;
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <div className="flex items-center gap-2 text-slate-400 text-sm">
+          <span className="w-4 h-4 border-2 border-slate-300 border-t-indigo-500 rounded-full animate-spin" />
+          Loading…
+        </div>
+      </div>
+    );
+  }
+  if (!config) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
+        Failed to load config.
+      </div>
+    );
+  }
 
   const hasFks = config.fks.length > 0;
 
   return (
-    <div style={styles.page}>
-      {toast && <div style={{ ...styles.toast, ...(toast.error ? styles.toastError : {}) }}>{toast.msg}</div>}
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Toast */}
+      {toast && (
+        <div
+          className={[
+            "fixed bottom-5 right-5 px-4 py-3 rounded-xl text-sm font-medium shadow-lg z-[200] max-w-sm",
+            toast.error
+              ? "bg-red-600 text-white"
+              : "bg-slate-900 text-slate-50",
+          ].join(" ")}
+        >
+          {toast.msg}
+        </div>
+      )}
 
       {/* Toolbar */}
-      <div style={styles.toolbar}>
-        <h1 style={styles.heading}>{stripTbl(config.tableName)}</h1>
-        <div style={styles.toolbarRight}>
+      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-slate-200 flex-shrink-0">
+        <h1 className="text-lg font-semibold text-slate-900 font-display">
+          {stripTbl(config.tableName)}
+        </h1>
+        <div className="flex items-center gap-2">
           <input
-            style={styles.search}
+            className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all w-52 placeholder:text-slate-400"
             placeholder="Search…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <button style={styles.newBtn} onClick={() => setModal({ mode: "create", row: null })}>
+          <button
+            className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors"
+            onClick={() => setModal({ mode: "create", row: null })}
+          >
             + New
           </button>
         </div>
       </div>
 
-      {/* FK filter bar — only shown for tables with foreign keys */}
+      {/* FK filter bar */}
       {hasFks && (
-        <div style={styles.filterBar}>
+        <div className="flex flex-wrap items-end gap-x-4 gap-y-2 px-6 py-3 bg-slate-50 border-b border-slate-200 flex-shrink-0">
           {config.fks.map((fk) => {
             const opts   = fkOptions[fk.refTable] ?? [];
             const label  = TABLE_SINGULAR[fk.refTable] ?? fk.refTable;
             const active = Boolean(fkFilters[fk.column]);
             return (
-              <div key={fk.column} style={styles.filterGroup}>
-                <label style={styles.filterLabel}>{label}</label>
+              <div key={fk.column} className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  {label}
+                </label>
                 <select
-                  style={{ ...styles.filterSelect, ...(active ? styles.filterSelectActive : {}) }}
+                  className={[
+                    "px-2.5 py-1.5 text-xs border rounded-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all min-w-[110px]",
+                    active
+                      ? "border-indigo-400 bg-indigo-50 text-indigo-700 font-medium"
+                      : "border-slate-200 bg-white text-slate-600",
+                  ].join(" ")}
                   value={fkFilters[fk.column] ?? ""}
                   onChange={(e) => setFkFilter(fk.column, e.target.value)}
                 >
@@ -188,14 +227,20 @@ export function TablePage({ apiRoute }: Props) {
             );
           })}
           {hasFilters && (
-            <button style={styles.clearBtn} onClick={clearFilters}>
+            <button
+              className="px-3 py-1.5 text-xs border border-red-200 rounded-lg bg-white text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors self-end"
+              onClick={clearFilters}
+            >
               ✕ Clear{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
             </button>
           )}
         </div>
       )}
 
-      <div style={styles.count}>{filtered.length} of {rows.length} records</div>
+      {/* Record count */}
+      <div className="px-6 py-1.5 text-xs text-slate-400 bg-white border-b border-slate-100 flex-shrink-0">
+        {filtered.length} of {rows.length} records
+      </div>
 
       <DataGrid
         config={config}
@@ -218,26 +263,3 @@ export function TablePage({ apiRoute }: Props) {
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  page:     { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" },
-  loading:  { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8" },
-  toolbar:  { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 10px" },
-  heading:  { fontSize: 18, fontWeight: 700, color: "#1e293b" },
-  toolbarRight: { display: "flex", gap: 8, alignItems: "center" },
-  search:   { padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13, width: 200 },
-  newBtn:   { padding: "6px 14px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 },
-  filterBar: {
-    display: "flex", flexWrap: "wrap", alignItems: "flex-end",
-    gap: "8px 16px", padding: "8px 20px 10px",
-    borderTop: "1px solid #e2e8f0", background: "#f8fafc",
-  },
-  filterGroup:  { display: "flex", flexDirection: "column", gap: 3 },
-  filterLabel:  { fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em" },
-  filterSelect: { padding: "5px 8px", border: "1px solid #cbd5e1", borderRadius: 5, fontSize: 13, background: "#fff", cursor: "pointer", minWidth: 120 },
-  filterSelectActive: { borderColor: "#2563eb", background: "#eff6ff", color: "#1d4ed8" },
-  clearBtn:  { padding: "5px 12px", fontSize: 12, cursor: "pointer", border: "1px solid #fca5a5", borderRadius: 5, background: "#fff", color: "#dc2626", alignSelf: "flex-end" },
-  count:    { padding: "6px 20px 8px", fontSize: 12, color: "#94a3b8" },
-  toast:      { position: "fixed", bottom: 24, right: 24, background: "#1e293b", color: "#f8fafc", padding: "10px 18px", borderRadius: 8, fontSize: 13, zIndex: 200, boxShadow: "0 4px 12px rgba(0,0,0,0.2)", maxWidth: 360 },
-  toastError: { background: "#dc2626" },
-};

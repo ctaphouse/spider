@@ -12,7 +12,6 @@ export function App() {
   );
 
   useEffect(() => {
-    // Load all schemas to populate sidebar
     Promise.all(
       TABLE_ORDER.map((r) => fetch(`/api/${r}/schema`).then((res) => res.json() as Promise<TableConfig>))
     ).then(setConfigs);
@@ -35,13 +34,9 @@ export function App() {
   return (
     <>
       <Sidebar configs={configs} current={current} onSelect={navigate} />
-      <main style={styles.main}>
+      <main className="flex-1 overflow-auto flex flex-col bg-slate-50">
         <TablePage key={current} apiRoute={current} />
       </main>
     </>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  main: { flex: 1, overflow: "auto", display: "flex", flexDirection: "column" },
-};

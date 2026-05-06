@@ -10,6 +10,14 @@ const isDev  = Bun.env.NODE_ENV !== "production";
 
 // Build the React bundle before starting (skip in production — use `bun run build:ui` separately)
 if (isDev) {
+  console.log("Building CSS...");
+  try {
+    await Bun.$`node_modules/.bin/tailwindcss -i src/ui/styles.css -o dist/styles.css`.quiet();
+  } catch (e) {
+    console.error("CSS build failed:", e);
+    process.exit(1);
+  }
+
   console.log("Building UI...");
   const result = await Bun.build({
     entrypoints: ["src/ui/main.tsx"],

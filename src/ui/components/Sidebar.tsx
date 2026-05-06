@@ -9,52 +9,45 @@ interface Props {
 
 export function Sidebar({ configs, current, onSelect }: Props) {
   return (
-    <nav style={styles.nav}>
-      <div style={styles.logo}>🕷 Spider</div>
-      {configs.map((cfg) => (
-        <button
-          key={cfg.apiRoute}
-          style={{ ...styles.item, ...(current === cfg.apiRoute ? styles.active : {}) }}
-          onClick={() => onSelect(cfg.apiRoute)}
-        >
-          {TABLE_NAV_LABELS[cfg.apiRoute] ?? cfg.apiRoute}
-        </button>
-      ))}
+    <nav className="w-48 bg-slate-950 flex flex-col flex-shrink-0">
+      {/* Logo */}
+      <div className="px-5 py-5 border-b border-slate-800/80">
+        <div className="flex items-center gap-2.5">
+          <span className="text-indigo-400 text-lg leading-none">⬡</span>
+          <span className="font-display text-white text-sm font-bold tracking-[0.18em] uppercase">
+            Spider
+          </span>
+        </div>
+      </div>
+
+      {/* Nav items */}
+      <div className="flex flex-col pt-2 pb-4 gap-px">
+        {configs.map((cfg) => {
+          const isActive = current === cfg.apiRoute;
+          return (
+            <button
+              key={cfg.apiRoute}
+              className={[
+                "text-left px-5 py-2.5 text-sm font-medium transition-all duration-100",
+                "w-full border-l-2",
+                isActive
+                  ? "text-white bg-slate-800/70 border-indigo-500"
+                  : "text-slate-500 hover:text-slate-300 hover:bg-slate-900/60 border-transparent",
+              ].join(" ")}
+              onClick={() => onSelect(cfg.apiRoute)}
+            >
+              {TABLE_NAV_LABELS[cfg.apiRoute] ?? cfg.apiRoute}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Footer */}
+      <div className="mt-auto px-5 py-4 border-t border-slate-800/80">
+        <span className="text-slate-600 text-[10px] tracking-wider uppercase font-medium">
+          Local Vault
+        </span>
+      </div>
     </nav>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  nav: {
-    width: 180,
-    background: "#1e293b",
-    color: "#e2e8f0",
-    display: "flex",
-    flexDirection: "column",
-    padding: "0 0 16px 0",
-    flexShrink: 0,
-  },
-  logo: {
-    padding: "20px 16px 16px",
-    fontSize: 18,
-    fontWeight: 700,
-    borderBottom: "1px solid #334155",
-    marginBottom: 8,
-    color: "#f8fafc",
-  },
-  item: {
-    background: "none",
-    border: "none",
-    color: "#94a3b8",
-    textAlign: "left",
-    padding: "10px 16px",
-    cursor: "pointer",
-    fontSize: 14,
-    width: "100%",
-    borderRadius: 0,
-  },
-  active: {
-    background: "#334155",
-    color: "#f1f5f9",
-  },
-};
