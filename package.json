@@ -1,0 +1,25 @@
+{
+  "name": "spider",
+  "version": "0.1.0",
+  "description": "MS Access (.accdb) to SQLite converter",
+  "module": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "start":      "bun run src/index.ts",
+    "dev":        "bun --watch run src/index.ts",
+    "test":       "bun test",
+    "server":     "bun run src/server.ts",
+    "server:dev": "bun --watch run src/server.ts",
+    "build:ui":   "bun build src/ui/main.tsx --outdir dist --target browser --minify"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3"
+  },
+  "dependencies": {
+    "hono": "^4.12.18",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
+  }
+}

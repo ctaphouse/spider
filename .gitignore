@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.claude/
+data/output/*.sqlite
+data/output/*.sqlite-shm
+data/output/*.sqlite-wal
+data/input/*.mdb
+data/input/*.accdb
+.DS_Store
