@@ -1,6 +1,8 @@
 import type { Hono } from "hono";
+import { resolve, dirname } from "path";
+import { mkdir, readdir, unlink } from "fs/promises";
 import { TABLE_CONFIGS } from "../tableConfig.ts";
-import { listRows, getRow, insertRow, updateRow, deleteRow, getColumns, getDb } from "../db.ts";
+import { listRows, getRow, insertRow, updateRow, deleteRow, getColumns, getDb, getDbPath } from "../db.ts";
 import { maskRow, maskRows } from "../middleware/maskFields.ts";
 
 // Reverse-FK map: apiRoute → tables that reference it
@@ -17,7 +19,64 @@ for (const cfg of Object.values(TABLE_CONFIGS)) {
   }
 }
 
+const BACKUP_DIR = resolve("data/backups");
+const MAX_BACKUPS = 10;
+
+async function ensureBackupDir() {
+  await mkdir(BACKUP_DIR, { recursive: true });
+}
+
+async function pruneBackups() {
+  const files = (await readdir(BACKUP_DIR))
+    .filter((f) => f.startsWith("spider-") && f.endsWith(".sqlite"))
+    .sort();
+  while (files.length > MAX_BACKUPS) {
+    const old = files.shift()!;
+    await unlink(resolve(BACKUP_DIR, old));
+  }
+}
+
 export function mountRoutes(app: Hono): void {
+  // --- Backup routes (must be before table CRUD routes) ---
+
+  // Create a backup
+  app.post("/api/backup", async (c) => {
+    try {
+      await ensureBackupDir();
+      const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      const filename = `spider-${ts}.sqlite`;
+      const dest = resolve(BACKUP_DIR, filename).replace(/\\/g, "/");
+      getDb().run(`VACUUM INTO '${dest}'`);
+      await pruneBackups();
+      const files = (await readdir(BACKUP_DIR))
+        .filter((f) => f.startsWith("spider-") && f.endsWith(".sqlite"))
+        .sort();
+      return c.json({ ok: true, filename, count: files.length, backups: files });
+    } catch (e) {
+      return c.json({ error: e instanceof Error ? e.message : "Backup failed" }, 500);
+    }
+  });
+
+  // Download a snapshot
+  app.get("/api/backup/download", async (c) => {
+    try {
+      await ensureBackupDir();
+      const tmpName = `.download-${Date.now()}.sqlite`;
+      const tmpPath = resolve(BACKUP_DIR, tmpName).replace(/\\/g, "/");
+      getDb().run(`VACUUM INTO '${tmpPath}'`);
+      const bytes = await Bun.file(tmpPath).arrayBuffer();
+      await unlink(resolve(BACKUP_DIR, tmpName));
+      const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      c.header("Content-Disposition", `attachment; filename="spider-${ts}.sqlite"`);
+      c.header("Content-Type", "application/x-sqlite3");
+      c.header("Content-Length", String(bytes.byteLength));
+      return c.body(bytes);
+    } catch (e) {
+      return c.json({ error: e instanceof Error ? e.message : "Download failed" }, 500);
+    }
+  });
+
+  // --- Table CRUD routes ---
   for (const config of Object.values(TABLE_CONFIGS)) {
     const base = `/api/${config.apiRoute}`;
 

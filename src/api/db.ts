@@ -1,8 +1,10 @@
 import { Database } from "bun:sqlite";
 
 let _db: Database | null = null;
+let _dbPath: string = "";
 
 export function initDb(path: string): void {
+  _dbPath = path;
   _db = new Database(path);
   _db.run("PRAGMA journal_mode=WAL");
 }
@@ -10,6 +12,10 @@ export function initDb(path: string): void {
 export function getDb(): Database {
   if (!_db) throw new Error("Database not initialized — call initDb() first");
   return _db;
+}
+
+export function getDbPath(): string {
+  return _dbPath;
 }
 
 export type Row = Record<string, unknown>;

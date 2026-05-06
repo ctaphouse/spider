@@ -4,6 +4,7 @@ dist/
 data/output/*.sqlite
 data/output/*.sqlite-shm
 data/output/*.sqlite-wal
+data/backups/
 data/input/*.mdb
 data/input/*.accdb
 .DS_Store

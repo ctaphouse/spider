@@ -57,8 +57,17 @@ export function Sidebar({ configs, current, onSelect }: Props) {
       </div>
 
       {/* Footer */}
-      <div className="px-6 py-5 border-t border-slate-800/60">
-        <div className="flex items-center gap-2">
+      <div className="px-4 py-5 border-t border-slate-800/60 flex flex-col gap-3">
+        <a
+          href="/api/backup/download"
+          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/[0.06] transition-colors text-[12px] font-medium"
+        >
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3" />
+          </svg>
+          Download Backup
+        </a>
+        <div className="flex items-center gap-2 px-3">
           <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" />
           <span className="text-slate-500 text-[11px]">
             Local database
