@@ -27,7 +27,7 @@ export const TABLE_CONFIGS: Record<string, TableConfig> = {
     ],
     fks: [
       { column: "UserID",          refTable: "users",          refPk: "Id", refLabel: "User"          },
-      { column: "PasscodeID",      refTable: "passcodes",      refPk: "Id", refLabel: "Notes"         },
+      { column: "PasscodeID",      refTable: "passcodes",      refPk: "Id", refLabel: "Passcode"      },
       { column: "CategoryID",      refTable: "categories",     refPk: "Id", refLabel: "Category"      },
       { column: "PaymentMethodID", refTable: "paymentMethods", refPk: "Id", refLabel: "PaymentMethod" },
       { column: "StatusId",        refTable: "statuses",       refPk: "Id", refLabel: "Status"        },

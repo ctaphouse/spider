@@ -8,8 +8,9 @@ const dbPath = resolve(Bun.argv[2] ?? "data/output/spider.sqlite");
 const port   = Number(Bun.env.PORT ?? 3000);
 const isDev  = Bun.env.NODE_ENV !== "production";
 
-// Build the React bundle before starting (skip in production — use `bun run build:ui` separately)
-if (isDev) {
+// Build the UI if dist/ is missing or if running in dev mode (--watch)
+const distExists = await Bun.file("dist/bundle.js").exists();
+if (!distExists || isDev) {
   console.log("Building CSS...");
   try {
     await Bun.$`node_modules/.bin/tailwindcss -i src/ui/styles.css -o dist/styles.css`.quiet();

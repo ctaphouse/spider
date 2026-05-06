@@ -41,7 +41,7 @@ export function TablePage({ apiRoute }: Props) {
       if (cfg.fks.length > 0) {
         const lookups = await Promise.all(
           cfg.fks.map((fk) =>
-            fetch(`/api/${fk.refTable}`).then((r) => r.json() as Promise<{ data: Row[] }>)
+            fetch(`/api/${fk.refTable}?masked=false`).then((r) => r.json() as Promise<{ data: Row[] }>)
           )
         );
         const labels:  Record<string, Record<string, string>> = {};

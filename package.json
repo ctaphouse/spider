@@ -10,7 +10,10 @@
     "test": "bun test",
     "server": "bun run src/server.ts",
     "server:dev": "bun --watch run src/server.ts",
-    "build:ui": "bun build src/ui/main.tsx --outdir dist --target browser --minify"
+    "build:ui": "bun build src/ui/main.tsx --outdir dist --target browser --minify",
+    "build": "bun run build:css && bun run build:ui && bun run build:html",
+    "build:css": "bunx tailwindcss -i src/ui/styles.css -o dist/styles.css --minify",
+    "build:html": "bun -e \"await Bun.write('dist/index.html', await Bun.file('src/ui/index.html').text())\""
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.2.4",

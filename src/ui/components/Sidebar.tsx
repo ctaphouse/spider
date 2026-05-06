@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { TABLE_NAV_LABELS } from "../labels.ts";
 import type { TableConfig } from "../types.ts";
 
@@ -8,6 +9,54 @@ interface Props {
 }
 
 export function Sidebar({ configs, current, onSelect }: Props) {
+  const [showBackup, setShowBackup] = useState(false);
+  const [password, setPassword]     = useState("");
+  const [confirm, setConfirm]       = useState("");
+  const [busy, setBusy]             = useState(false);
+  const [error, setError]           = useState("");
+
+  async function handleDownload(e: React.FormEvent) {
+    e.preventDefault();
+    if (password.length < 4) { setError("Minimum 4 characters"); return; }
+    if (password !== confirm) { setError("Passwords do not match"); return; }
+    setError("");
+    setBusy(true);
+    try {
+      const res = await fetch("/api/backup/download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      if (!res.ok) {
+        const body = await res.json() as { error?: string };
+        setError(body.error ?? "Download failed");
+        return;
+      }
+      const blob = await res.blob();
+      const filename = res.headers.get("X-Filename") ?? "spider-backup.sqlite.enc";
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      setShowBackup(false);
+      setPassword("");
+      setConfirm("");
+    } catch {
+      setError("Download failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function closeBackup() {
+    setShowBackup(false);
+    setPassword("");
+    setConfirm("");
+    setError("");
+  }
+
   return (
     <nav className="w-60 bg-slate-950 flex flex-col flex-shrink-0 border-r border-slate-800">
       {/* Brand */}
@@ -57,23 +106,107 @@ export function Sidebar({ configs, current, onSelect }: Props) {
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-5 border-t border-slate-800/60 flex flex-col gap-3">
-        <a
-          href="/api/backup/download"
-          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/[0.06] transition-colors text-[12px] font-medium"
+      <div className="px-4 py-5 border-t border-slate-800/60 flex flex-col gap-2">
+        <button
+          onClick={() => setShowBackup(true)}
+          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-white/[0.06] transition-colors text-[12px] font-medium w-full text-left"
         >
           <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3" />
           </svg>
           Download Backup
-        </a>
-        <div className="flex items-center gap-2 px-3">
+        </button>
+        <button
+          onClick={async () => {
+            if (!confirm("Shut down Spider?")) return;
+            try {
+              await fetch("/api/shutdown", { method: "POST" });
+            } catch { /* server may close before response */ }
+            document.title = "Spider — Stopped";
+            document.body.innerHTML = '<div style="display:flex;height:100vh;align-items:center;justify-content:center;font-family:system-ui;color:#64748b">Spider has been shut down. You can close this tab.</div>';
+          }}
+          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-white/[0.04] transition-colors text-[12px] font-medium w-full text-left"
+        >
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5.636 5.636a9 9 0 1012.728 0M12 3v9" />
+          </svg>
+          Quit Spider
+        </button>
+        <div className="flex items-center gap-2 px-3 pt-1">
           <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" />
           <span className="text-slate-500 text-[11px]">
             Local database
           </span>
         </div>
       </div>
+
+      {/* Backup password prompt */}
+      {showBackup && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+          onClick={(e) => e.target === e.currentTarget && closeBackup()}
+        >
+          <form
+            onSubmit={handleDownload}
+            className="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden"
+          >
+            <div className="px-6 py-5 border-b border-slate-100">
+              <h3 className="text-base font-semibold text-slate-900">Encrypted Backup</h3>
+              <p className="text-xs text-slate-400 mt-1">
+                The backup will be encrypted with AES-256-GCM. You will need this password to restore it.
+              </p>
+            </div>
+
+            <div className="px-6 py-5 flex flex-col gap-4">
+              {error && (
+                <div className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                  {error}
+                </div>
+              )}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all font-mono"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  className="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all font-mono"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+              <button
+                type="button"
+                className="px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 border border-slate-200 rounded-lg hover:bg-white transition-colors"
+                onClick={closeBackup}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={busy}
+                className="px-5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 rounded-lg transition-colors shadow-sm shadow-indigo-600/20"
+              >
+                {busy ? "Encrypting..." : "Download"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </nav>
   );
 }
