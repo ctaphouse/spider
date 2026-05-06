@@ -27,8 +27,3 @@ export const COLUMN_DISPLAY: Record<string, string> = {
   AccountNumber: "Account Number",
   PaymentMethod: "Payment Method",
 };
-
-/** Strip the "tbl" prefix Access uses and return a plain display name */
-export function stripTbl(tableName: string): string {
-  return tableName.startsWith("tbl") ? tableName.slice(3) : tableName;
-}

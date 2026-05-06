@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { DataGrid } from "./DataGrid.tsx";
 import { RecordModal } from "./RecordModal.tsx";
-import { stripTbl, TABLE_SINGULAR } from "../labels.ts";
+import { TABLE_SINGULAR } from "../labels.ts";
 import type { TableConfig, Row } from "../types.ts";
 
 interface Props {
@@ -142,9 +142,9 @@ export function TablePage({ apiRoute }: Props) {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="flex items-center gap-2 text-slate-400 text-sm">
-          <span className="w-4 h-4 border-2 border-slate-300 border-t-indigo-500 rounded-full animate-spin" />
-          Loading…
+        <div className="flex flex-col items-center gap-3 text-slate-400">
+          <span className="w-6 h-6 border-2 border-slate-200 border-t-indigo-500 rounded-full animate-spin" />
+          <span className="text-sm">Loading...</span>
         </div>
       </div>
     );
@@ -160,95 +160,115 @@ export function TablePage({ apiRoute }: Props) {
   const hasFks = config.fks.length > 0;
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden p-6">
       {/* Toast */}
       {toast && (
         <div
           className={[
-            "fixed bottom-5 right-5 px-4 py-3 rounded-xl text-sm font-medium shadow-lg z-[200] max-w-sm",
+            "fixed bottom-6 right-6 px-5 py-3.5 rounded-xl text-sm font-medium z-[200] max-w-sm",
+            "shadow-xl border",
             toast.error
-              ? "bg-red-600 text-white"
-              : "bg-slate-900 text-slate-50",
+              ? "bg-red-600 text-white border-red-500 shadow-red-600/20"
+              : "bg-slate-900 text-slate-50 border-slate-700 shadow-slate-900/30",
           ].join(" ")}
         >
           {toast.msg}
         </div>
       )}
 
-      {/* Toolbar */}
-      <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-slate-200 flex-shrink-0">
-        <h1 className="text-lg font-semibold text-slate-900 font-display">
-          {stripTbl(config.tableName)}
-        </h1>
-        <div className="flex items-center gap-2">
-          <input
-            className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all w-52 placeholder:text-slate-400"
-            placeholder="Search…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <button
-            className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-colors"
-            onClick={() => setModal({ mode: "create", row: null })}
-          >
-            + New
-          </button>
-        </div>
-      </div>
-
-      {/* FK filter bar */}
-      {hasFks && (
-        <div className="flex flex-wrap items-end gap-x-4 gap-y-2 px-6 py-3 bg-slate-50 border-b border-slate-200 flex-shrink-0">
-          {config.fks.map((fk) => {
-            const opts   = fkOptions[fk.refTable] ?? [];
-            const label  = TABLE_SINGULAR[fk.refTable] ?? fk.refTable;
-            const active = Boolean(fkFilters[fk.column]);
-            return (
-              <div key={fk.column} className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  {label}
-                </label>
-                <select
-                  className={[
-                    "px-2.5 py-1.5 text-xs border rounded-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all min-w-[110px]",
-                    active
-                      ? "border-indigo-400 bg-indigo-50 text-indigo-700 font-medium"
-                      : "border-slate-200 bg-white text-slate-600",
-                  ].join(" ")}
-                  value={fkFilters[fk.column] ?? ""}
-                  onChange={(e) => setFkFilter(fk.column, e.target.value)}
-                >
-                  <option value="">All</option>
-                  {opts.map((opt) => (
-                    <option key={opt.value} value={String(opt.value)}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-            );
-          })}
-          {hasFilters && (
+      {/* Card container */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200/80 flex flex-col flex-1 overflow-hidden">
+        {/* Card header */}
+        <div className="flex items-center justify-between px-7 py-5 border-b border-slate-100">
+          <div>
+            <h1 className="text-lg font-bold text-slate-900 font-display tracking-tight">
+              {config.tableName}
+            </h1>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {rows.length} total record{rows.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                className="pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all w-60 placeholder:text-slate-400"
+                placeholder="Search records..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
             <button
-              className="px-3 py-1.5 text-xs border border-red-200 rounded-lg bg-white text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors self-end"
-              onClick={clearFilters}
+              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm shadow-indigo-600/20"
+              onClick={() => setModal({ mode: "create", row: null })}
             >
-              ✕ Clear{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+              + New
             </button>
-          )}
+          </div>
         </div>
-      )}
 
-      {/* Record count */}
-      <div className="px-6 py-1.5 text-xs text-slate-400 bg-white border-b border-slate-100 flex-shrink-0">
-        {filtered.length} of {rows.length} records
+        {/* FK filter strip */}
+        {hasFks && (
+          <div className="flex flex-wrap items-end gap-x-5 gap-y-3 px-7 py-4 bg-slate-50/80 border-b border-slate-100">
+            {config.fks.map((fk) => {
+              const opts   = fkOptions[fk.refTable] ?? [];
+              const label  = TABLE_SINGULAR[fk.refTable] ?? fk.refTable;
+              const active = Boolean(fkFilters[fk.column]);
+              return (
+                <div key={fk.column} className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.08em]">
+                    {label}
+                  </label>
+                  <select
+                    className={[
+                      "px-3 py-2 text-xs border rounded-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all min-w-[130px]",
+                      active
+                        ? "border-indigo-300 bg-indigo-50 text-indigo-700 font-medium"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300",
+                    ].join(" ")}
+                    value={fkFilters[fk.column] ?? ""}
+                    onChange={(e) => setFkFilter(fk.column, e.target.value)}
+                  >
+                    <option value="">All</option>
+                    {opts.map((opt) => (
+                      <option key={opt.value} value={String(opt.value)}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+              );
+            })}
+            {hasFilters && (
+              <button
+                className="px-3.5 py-2 text-xs border border-red-200 rounded-lg bg-white text-red-500 hover:bg-red-50 hover:text-red-600 hover:border-red-300 transition-colors self-end"
+                onClick={clearFilters}
+              >
+                Clear{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Table area */}
+        <div className="flex-1 overflow-auto scroll-thin">
+          <DataGrid
+            config={config}
+            rows={filtered}
+            fkLabels={fkLabels}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        </div>
+
+        {/* Card footer */}
+        <div className="px-7 py-3 border-t border-slate-100 bg-slate-50/50 flex-shrink-0">
+          <span className="text-xs text-slate-400">
+            Showing <span className="font-medium text-slate-500">{filtered.length}</span> of{" "}
+            <span className="font-medium text-slate-500">{rows.length}</span> records
+          </span>
+        </div>
       </div>
-
-      <DataGrid
-        config={config}
-        rows={filtered}
-        fkLabels={fkLabels}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-      />
 
       {modal && (
         <RecordModal

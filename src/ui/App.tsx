@@ -34,7 +34,7 @@ export function App() {
   return (
     <>
       <Sidebar configs={configs} current={current} onSelect={navigate} />
-      <main className="flex-1 overflow-auto flex flex-col bg-slate-50">
+      <main className="flex-1 overflow-hidden flex flex-col bg-slate-100">
         <TablePage key={current} apiRoute={current} />
       </main>
     </>

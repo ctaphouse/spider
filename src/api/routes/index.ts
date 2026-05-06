@@ -12,7 +12,7 @@ for (const cfg of Object.values(TABLE_CONFIGS)) {
     (REVERSE_FK[fk.refTable] ??= []).push({
       tableName: cfg.tableName,
       column:    fk.column,
-      label:     cfg.tableName.startsWith("tbl") ? cfg.tableName.slice(3) : cfg.tableName,
+      label:     cfg.tableName,
     });
   }
 }
