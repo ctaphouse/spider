@@ -1,4 +1,5 @@
-import type { FKRef, Row } from "../types.ts";
+import { useState } from "react";
+import type { FKRef } from "../types.ts";
 
 interface Props {
   name: string;
@@ -7,10 +8,10 @@ interface Props {
   fk?: FKRef;
   fkOptions?: { value: string | number; label: string }[];
   onChange: (name: string, value: unknown) => void;
-  isRecoveryGroup?: boolean;
 }
 
 export function FieldInput({ name, value, sensitive, fk, fkOptions, onChange }: Props) {
+  const [revealed, setRevealed] = useState(false);
   const strVal = value != null ? String(value) : "";
 
   if (fk && fkOptions) {
@@ -33,13 +34,23 @@ export function FieldInput({ name, value, sensitive, fk, fkOptions, onChange }: 
 
   if (sensitive) {
     return (
-      <input
-        type="password"
-        style={styles.input}
-        value={strVal}
-        autoComplete="off"
-        onChange={(e) => onChange(name, e.target.value || null)}
-      />
+      <div style={styles.sensitiveWrapper}>
+        <input
+          type={revealed ? "text" : "password"}
+          style={{ ...styles.input, ...styles.sensitiveInput }}
+          value={strVal}
+          autoComplete="off"
+          onChange={(e) => onChange(name, e.target.value || null)}
+        />
+        <button
+          type="button"
+          style={styles.revealBtn}
+          title={revealed ? "Hide" : "Reveal"}
+          onClick={() => setRevealed((v) => !v)}
+        >
+          {revealed ? "🙈" : "👁"}
+        </button>
+      </div>
     );
   }
 
@@ -61,5 +72,23 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 4,
     fontSize: 13,
     background: "#fff",
+  },
+  sensitiveWrapper: {
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+  },
+  sensitiveInput: {
+    width: "100%",
+    fontFamily: "monospace",
+  },
+  revealBtn: {
+    flexShrink: 0,
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    fontSize: 14,
+    padding: "2px 4px",
+    lineHeight: 1,
   },
 };
