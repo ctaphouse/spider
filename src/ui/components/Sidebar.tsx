@@ -14,6 +14,7 @@ export function Sidebar({ configs, current, onSelect }: Props) {
   const [confirm, setConfirm]       = useState("");
   const [busy, setBusy]             = useState(false);
   const [error, setError]           = useState("");
+  const [shutdown, setShutdown]     = useState(false);
 
   async function handleDownload(e: React.FormEvent) {
     e.preventDefault();
@@ -117,13 +118,10 @@ export function Sidebar({ configs, current, onSelect }: Props) {
           Download Backup
         </button>
         <button
-          onClick={async () => {
-            if (!confirm("Shut down Spider?")) return;
-            try {
-              await fetch("/api/shutdown", { method: "POST" });
-            } catch { /* server may close before response */ }
-            document.title = "Spider — Stopped";
-            document.body.innerHTML = '<div style="display:flex;height:100vh;align-items:center;justify-content:center;font-family:system-ui;color:#64748b">Spider has been shut down. You can close this tab.</div>';
+          onClick={() => {
+            if (!window.confirm("Shut down Spider?")) return;
+            setShutdown(true);
+            fetch("/api/shutdown", { method: "POST" }).catch(() => {});
           }}
           className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-white/[0.04] transition-colors text-[12px] font-medium w-full text-left"
         >
@@ -139,6 +137,21 @@ export function Sidebar({ configs, current, onSelect }: Props) {
           </span>
         </div>
       </div>
+
+      {/* Shutdown overlay */}
+      {shutdown && (
+        <div className="fixed inset-0 bg-slate-950 flex items-center justify-center z-[999]">
+          <div className="text-center">
+            <div className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5.636 5.636a9 9 0 1012.728 0M12 3v9" />
+              </svg>
+            </div>
+            <p className="text-slate-400 text-sm">Spider has been shut down.</p>
+            <p className="text-slate-600 text-xs mt-2">You can close this tab.</p>
+          </div>
+        </div>
+      )}
 
       {/* Backup password prompt */}
       {showBackup && (
