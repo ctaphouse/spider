@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { FieldInput } from "./FieldInput.tsx";
-import { TABLE_SINGULAR } from "../labels.ts";
+import { TABLE_SINGULAR, COLUMN_DISPLAY } from "../labels.ts";
 import type { TableConfig, Row } from "../types.ts";
 
 const RECOVERY_COLS = ["RecoveryCode1","RecoveryCode2","RecoveryCode3","RecoveryCode4","RecoveryCode5"];
@@ -59,7 +59,7 @@ export function RecordModal({ mode, config, initial, fkOptions, onSave, onClose 
   function fieldLabel(colName: string): string {
     const fk = config.fks.find((f) => f.column === colName);
     if (fk) return TABLE_SINGULAR[fk.refTable] ?? fk.refTable;
-    return colName;
+    return COLUMN_DISPLAY[colName] ?? colName;
   }
 
   return (

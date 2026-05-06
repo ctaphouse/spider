@@ -1,5 +1,5 @@
 import { MaskedField } from "./MaskedField.tsx";
-import { TABLE_SINGULAR } from "../labels.ts";
+import { TABLE_SINGULAR, COLUMN_DISPLAY } from "../labels.ts";
 import type { TableConfig, Row } from "../types.ts";
 
 // Recovery code columns are grouped — show just a summary in the grid
@@ -15,11 +15,11 @@ interface Props {
   onDelete: (row: Row) => void;
 }
 
-/** Human-readable header for a column: FK cols → singular table name; others → col name as-is */
+/** Human-readable header for a column: FK cols → singular table name; others → COLUMN_DISPLAY override or raw name */
 function colHeader(col: string, config: TableConfig): string {
   const fk = config.fks.find((f) => f.column === col);
   if (fk) return TABLE_SINGULAR[fk.refTable] ?? fk.refTable;
-  return col;
+  return COLUMN_DISPLAY[col] ?? col;
 }
 
 export function DataGrid({ config, rows, fkLabels, onEdit, onDelete }: Props) {

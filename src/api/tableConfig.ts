@@ -19,7 +19,7 @@ export const TABLE_CONFIGS: Record<string, TableConfig> = {
     tableName: "tblAccount",
     apiRoute: "accounts",
     pk: "AccountID",
-    labelColumn: "AccountName",
+    labelColumn: "Account",
     sensitiveFields: [
       "AccountNumber",
       "RecoveryCode1", "RecoveryCode2", "RecoveryCode3",
