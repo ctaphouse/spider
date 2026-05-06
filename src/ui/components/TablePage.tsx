@@ -18,12 +18,12 @@ export function TablePage({ apiRoute }: Props) {
   const [modal, setModal]         = useState<ModalState | null>(null);
   const [search, setSearch]       = useState("");
   const [fkFilters, setFkFilters] = useState<Record<string, string>>({});
-  const [toast, setToast]         = useState<string | null>(null);
+  const [toast, setToast]         = useState<{ msg: string; error?: boolean } | null>(null);
   const [loading, setLoading]     = useState(true);
 
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2500);
+  function showToast(msg: string, error = false) {
+    setToast({ msg, error });
+    setTimeout(() => setToast(null), error ? 4000 : 2500);
   }
 
   const loadData = useCallback(async () => {
@@ -96,8 +96,13 @@ export function TablePage({ apiRoute }: Props) {
   async function handleDelete(row: Row) {
     if (!config) return;
     if (!confirm("Delete this record?")) return;
-    const id = String(row[config.pk]);
-    await fetch(`/api/${apiRoute}/${id}`, { method: "DELETE" });
+    const id  = String(row[config.pk]);
+    const res = await fetch(`/api/${apiRoute}/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const body = await res.json() as { error?: string };
+      showToast(body.error ?? "Delete failed.", true);
+      return;
+    }
     showToast("Record deleted.");
     await loadData();
   }
@@ -141,7 +146,7 @@ export function TablePage({ apiRoute }: Props) {
 
   return (
     <div style={styles.page}>
-      {toast && <div style={styles.toast}>{toast}</div>}
+      {toast && <div style={{ ...styles.toast, ...(toast.error ? styles.toastError : {}) }}>{toast.msg}</div>}
 
       {/* Toolbar */}
       <div style={styles.toolbar}>
@@ -233,9 +238,6 @@ const styles: Record<string, React.CSSProperties> = {
   filterSelectActive: { borderColor: "#2563eb", background: "#eff6ff", color: "#1d4ed8" },
   clearBtn:  { padding: "5px 12px", fontSize: 12, cursor: "pointer", border: "1px solid #fca5a5", borderRadius: 5, background: "#fff", color: "#dc2626", alignSelf: "flex-end" },
   count:    { padding: "6px 20px 8px", fontSize: 12, color: "#94a3b8" },
-  toast:    {
-    position: "fixed", bottom: 24, right: 24, background: "#1e293b", color: "#f8fafc",
-    padding: "10px 18px", borderRadius: 8, fontSize: 13, zIndex: 200,
-    boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-  },
+  toast:      { position: "fixed", bottom: 24, right: 24, background: "#1e293b", color: "#f8fafc", padding: "10px 18px", borderRadius: 8, fontSize: 13, zIndex: 200, boxShadow: "0 4px 12px rgba(0,0,0,0.2)", maxWidth: 360 },
+  toastError: { background: "#dc2626" },
 };

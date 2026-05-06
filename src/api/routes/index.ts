@@ -1,7 +1,21 @@
 import type { Hono } from "hono";
 import { TABLE_CONFIGS } from "../tableConfig.ts";
-import { listRows, getRow, insertRow, updateRow, deleteRow, getColumns } from "../db.ts";
+import { listRows, getRow, insertRow, updateRow, deleteRow, getColumns, getDb } from "../db.ts";
 import { maskRow, maskRows } from "../middleware/maskFields.ts";
+
+// Reverse-FK map: apiRoute → tables that reference it
+// e.g. "categories" → [{ tableName: "tblAccount", column: "CategoryID", label: "Account" }]
+interface RevRef { tableName: string; column: string; label: string }
+const REVERSE_FK: Record<string, RevRef[]> = {};
+for (const cfg of Object.values(TABLE_CONFIGS)) {
+  for (const fk of cfg.fks) {
+    (REVERSE_FK[fk.refTable] ??= []).push({
+      tableName: cfg.tableName,
+      column:    fk.column,
+      label:     cfg.tableName.startsWith("tbl") ? cfg.tableName.slice(3) : cfg.tableName,
+    });
+  }
+}
 
 export function mountRoutes(app: Hono): void {
   for (const config of Object.values(TABLE_CONFIGS)) {
@@ -46,9 +60,24 @@ export function mountRoutes(app: Hono): void {
       return c.json(updated);
     });
 
-    // Delete
+    // Delete — with referential integrity check
     app.delete(`${base}/:id`, (c) => {
-      const deleted = deleteRow(config.tableName, config.pk, c.req.param("id"));
+      const id   = c.req.param("id");
+      const refs = REVERSE_FK[config.apiRoute] ?? [];
+
+      for (const ref of refs) {
+        const { n } = getDb()
+          .query(`SELECT COUNT(*) AS n FROM "${ref.tableName}" WHERE "${ref.column}" = ?`)
+          .get(id) as { n: number };
+        if (n > 0) {
+          return c.json(
+            { error: `Cannot delete: ${n} ${ref.label} record${n === 1 ? "" : "s"} reference this entry.` },
+            409,
+          );
+        }
+      }
+
+      const deleted = deleteRow(config.tableName, config.pk, id);
       if (!deleted) return c.json({ error: "Not found" }, 404);
       return c.json({ ok: true });
     });
