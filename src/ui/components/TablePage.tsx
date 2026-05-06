@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { DataGrid } from "./DataGrid.tsx";
 import { RecordModal } from "./RecordModal.tsx";
-import { stripTbl } from "../labels.ts";
+import { stripTbl, TABLE_SINGULAR } from "../labels.ts";
 import type { TableConfig, Row } from "../types.ts";
 
 interface Props {
@@ -11,14 +11,15 @@ interface Props {
 type ModalState = { mode: "create"; row: null } | { mode: "edit"; row: Row };
 
 export function TablePage({ apiRoute }: Props) {
-  const [config, setConfig]     = useState<TableConfig | null>(null);
-  const [rows, setRows]         = useState<Row[]>([]);
-  const [fkLabels, setFkLabels] = useState<Record<string, Record<string, string>>>({});
+  const [config, setConfig]       = useState<TableConfig | null>(null);
+  const [rows, setRows]           = useState<Row[]>([]);
+  const [fkLabels, setFkLabels]   = useState<Record<string, Record<string, string>>>({});
   const [fkOptions, setFkOptions] = useState<Record<string, { value: string | number; label: string }[]>>({});
-  const [modal, setModal]       = useState<ModalState | null>(null);
-  const [search, setSearch]     = useState("");
-  const [toast, setToast]       = useState<string | null>(null);
-  const [loading, setLoading]   = useState(true);
+  const [modal, setModal]         = useState<ModalState | null>(null);
+  const [search, setSearch]       = useState("");
+  const [fkFilters, setFkFilters] = useState<Record<string, string>>({});
+  const [toast, setToast]         = useState<string | null>(null);
+  const [loading, setLoading]     = useState(true);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -37,7 +38,6 @@ export function TablePage({ apiRoute }: Props) {
       setConfig(cfg);
       setRows(data.data);
 
-      // Load FK lookup data for labels + dropdowns
       if (cfg.fks.length > 0) {
         const lookups = await Promise.all(
           cfg.fks.map((fk) =>
@@ -48,7 +48,7 @@ export function TablePage({ apiRoute }: Props) {
         const options: Record<string, { value: string | number; label: string }[]> = {};
         cfg.fks.forEach((fk, i) => {
           const lookupRows = lookups[i].data;
-          labels[fk.column]  = {};
+          labels[fk.column]    = {};
           options[fk.refTable] = lookupRows.map((r) => ({
             value: r[fk.refPk] as string | number,
             label: String(r[fk.refLabel] ?? r[fk.refPk] ?? ""),
@@ -67,6 +67,7 @@ export function TablePage({ apiRoute }: Props) {
 
   useEffect(() => {
     setSearch("");
+    setFkFilters({});
     setModal(null);
     loadData();
   }, [apiRoute, loadData]);
@@ -101,7 +102,6 @@ export function TablePage({ apiRoute }: Props) {
     await loadData();
   }
 
-  // Pre-fetch unmasked data when opening edit modal for a record with sensitive fields
   async function handleEdit(row: Row) {
     if (!config) return;
     let rowData = row;
@@ -112,21 +112,38 @@ export function TablePage({ apiRoute }: Props) {
     setModal({ mode: "edit", row: rowData });
   }
 
-  const filtered = search
-    ? rows.filter((r) =>
-        Object.values(r).some((v) =>
-          String(v ?? "").toLowerCase().includes(search.toLowerCase())
-        )
-      )
-    : rows;
+  function setFkFilter(col: string, val: string) {
+    setFkFilters((prev) => ({ ...prev, [col]: val }));
+  }
+
+  function clearFilters() {
+    setFkFilters({});
+    setSearch("");
+  }
+
+  const activeFilterCount = Object.values(fkFilters).filter(Boolean).length;
+  const hasFilters = activeFilterCount > 0 || search !== "";
+
+  const filtered = rows.filter((row) => {
+    if (search && !Object.values(row).some((v) =>
+      String(v ?? "").toLowerCase().includes(search.toLowerCase())
+    )) return false;
+    for (const [col, val] of Object.entries(fkFilters)) {
+      if (val !== "" && String(row[col]) !== val) return false;
+    }
+    return true;
+  });
 
   if (loading) return <div style={styles.loading}>Loading…</div>;
   if (!config)  return <div style={styles.loading}>Failed to load config.</div>;
+
+  const hasFks = config.fks.length > 0;
 
   return (
     <div style={styles.page}>
       {toast && <div style={styles.toast}>{toast}</div>}
 
+      {/* Toolbar */}
       <div style={styles.toolbar}>
         <h1 style={styles.heading}>{stripTbl(config.tableName)}</h1>
         <div style={styles.toolbarRight}>
@@ -141,6 +158,37 @@ export function TablePage({ apiRoute }: Props) {
           </button>
         </div>
       </div>
+
+      {/* FK filter bar — only shown for tables with foreign keys */}
+      {hasFks && (
+        <div style={styles.filterBar}>
+          {config.fks.map((fk) => {
+            const opts   = fkOptions[fk.refTable] ?? [];
+            const label  = TABLE_SINGULAR[fk.refTable] ?? fk.refTable;
+            const active = Boolean(fkFilters[fk.column]);
+            return (
+              <div key={fk.column} style={styles.filterGroup}>
+                <label style={styles.filterLabel}>{label}</label>
+                <select
+                  style={{ ...styles.filterSelect, ...(active ? styles.filterSelectActive : {}) }}
+                  value={fkFilters[fk.column] ?? ""}
+                  onChange={(e) => setFkFilter(fk.column, e.target.value)}
+                >
+                  <option value="">All</option>
+                  {opts.map((opt) => (
+                    <option key={opt.value} value={String(opt.value)}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            );
+          })}
+          {hasFilters && (
+            <button style={styles.clearBtn} onClick={clearFilters}>
+              ✕ Clear{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+            </button>
+          )}
+        </div>
+      )}
 
       <div style={styles.count}>{filtered.length} of {rows.length} records</div>
 
@@ -174,7 +222,17 @@ const styles: Record<string, React.CSSProperties> = {
   toolbarRight: { display: "flex", gap: 8, alignItems: "center" },
   search:   { padding: "6px 10px", border: "1px solid #cbd5e1", borderRadius: 6, fontSize: 13, width: 200 },
   newBtn:   { padding: "6px 14px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 600 },
-  count:    { padding: "0 20px 8px", fontSize: 12, color: "#94a3b8" },
+  filterBar: {
+    display: "flex", flexWrap: "wrap", alignItems: "flex-end",
+    gap: "8px 16px", padding: "8px 20px 10px",
+    borderTop: "1px solid #e2e8f0", background: "#f8fafc",
+  },
+  filterGroup:  { display: "flex", flexDirection: "column", gap: 3 },
+  filterLabel:  { fontSize: 11, fontWeight: 600, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.04em" },
+  filterSelect: { padding: "5px 8px", border: "1px solid #cbd5e1", borderRadius: 5, fontSize: 13, background: "#fff", cursor: "pointer", minWidth: 120 },
+  filterSelectActive: { borderColor: "#2563eb", background: "#eff6ff", color: "#1d4ed8" },
+  clearBtn:  { padding: "5px 12px", fontSize: 12, cursor: "pointer", border: "1px solid #fca5a5", borderRadius: 5, background: "#fff", color: "#dc2626", alignSelf: "flex-end" },
+  count:    { padding: "6px 20px 8px", fontSize: 12, color: "#94a3b8" },
   toast:    {
     position: "fixed", bottom: 24, right: 24, background: "#1e293b", color: "#f8fafc",
     padding: "10px 18px", borderRadius: 8, fontSize: 13, zIndex: 200,
