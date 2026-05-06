@@ -1,13 +1,5 @@
+import { TABLE_NAV_LABELS } from "../labels.ts";
 import type { TableConfig } from "../types.ts";
-
-const LABELS: Record<string, string> = {
-  accounts:       "Accounts",
-  categories:     "Categories",
-  passcodes:      "Passcodes",
-  paymentMethods: "Payment Methods",
-  statuses:       "Statuses",
-  users:          "Users",
-};
 
 interface Props {
   configs: TableConfig[];
@@ -25,7 +17,7 @@ export function Sidebar({ configs, current, onSelect }: Props) {
           style={{ ...styles.item, ...(current === cfg.apiRoute ? styles.active : {}) }}
           onClick={() => onSelect(cfg.apiRoute)}
         >
-          {LABELS[cfg.apiRoute] ?? cfg.apiRoute}
+          {TABLE_NAV_LABELS[cfg.apiRoute] ?? cfg.apiRoute}
         </button>
       ))}
     </nav>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { DataGrid } from "./DataGrid.tsx";
 import { RecordModal } from "./RecordModal.tsx";
+import { stripTbl } from "../labels.ts";
 import type { TableConfig, Row } from "../types.ts";
 
 interface Props {
@@ -127,7 +128,7 @@ export function TablePage({ apiRoute }: Props) {
       {toast && <div style={styles.toast}>{toast}</div>}
 
       <div style={styles.toolbar}>
-        <h1 style={styles.heading}>{config.tableName}</h1>
+        <h1 style={styles.heading}>{stripTbl(config.tableName)}</h1>
         <div style={styles.toolbarRight}>
           <input
             style={styles.search}

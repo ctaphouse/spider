@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { FieldInput } from "./FieldInput.tsx";
+import { TABLE_SINGULAR } from "../labels.ts";
 import type { TableConfig, Row } from "../types.ts";
 
 const RECOVERY_COLS = ["RecoveryCode1","RecoveryCode2","RecoveryCode3","RecoveryCode4","RecoveryCode5"];
@@ -54,6 +55,13 @@ export function RecordModal({ mode, config, initial, fkOptions, onSave, onClose 
   );
   const recoveryCols = config.columns.filter((c) => RECOVERY_COLS.includes(c.name));
 
+  /** Human-readable label for a form field */
+  function fieldLabel(colName: string): string {
+    const fk = config.fks.find((f) => f.column === colName);
+    if (fk) return TABLE_SINGULAR[fk.refTable] ?? fk.refTable;
+    return colName;
+  }
+
   return (
     <div style={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div style={styles.modal}>
@@ -67,13 +75,26 @@ export function RecordModal({ mode, config, initial, fkOptions, onSave, onClose 
         {error && <div style={styles.error}>{error}</div>}
 
         <form onSubmit={handleSubmit} style={styles.form}>
+          {/* PK: read-only in edit mode, hidden in create */}
+          {mode === "edit" && (
+            <div style={{ ...styles.field, gridColumn: "span 2" }}>
+              <label style={styles.label}>Id</label>
+              <input
+                style={{ ...styles.readOnly }}
+                value={String(form[pk] ?? "")}
+                readOnly
+                tabIndex={-1}
+              />
+            </div>
+          )}
+
           <div style={styles.grid}>
             {regularCols.map((col) => {
               const fk  = config.fks.find((f) => f.column === col.name);
               const isSensitive = config.sensitiveFields.includes(col.name);
               return (
                 <div key={col.name} style={styles.field}>
-                  <label style={styles.label}>{col.name}</label>
+                  <label style={styles.label}>{fieldLabel(col.name)}</label>
                   <FieldInput
                     name={col.name}
                     value={form[col.name]}
@@ -147,6 +168,7 @@ const styles: Record<string, React.CSSProperties> = {
   grid:     { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 16px" },
   field:    { display: "flex", flexDirection: "column", gap: 4 },
   label:    { fontSize: 12, fontWeight: 600, color: "#475569" },
+  readOnly: { width: "100%", padding: "6px 8px", border: "1px solid #e2e8f0", borderRadius: 4, fontSize: 13, background: "#f8fafc", color: "#94a3b8" },
   recoverySection: { borderTop: "1px solid #e2e8f0", paddingTop: 12, display: "flex", flexDirection: "column", gap: 10 },
   toggleBtn:  { background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#475569", textAlign: "left", padding: 0 },
   actions:    { display: "flex", justifyContent: "flex-end", gap: 8, padding: "12px 0 4px", borderTop: "1px solid #e2e8f0" },

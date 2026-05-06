@@ -1,4 +1,5 @@
 import { MaskedField } from "./MaskedField.tsx";
+import { TABLE_SINGULAR } from "../labels.ts";
 import type { TableConfig, Row } from "../types.ts";
 
 // Recovery code columns are grouped — show just a summary in the grid
@@ -14,10 +15,17 @@ interface Props {
   onDelete: (row: Row) => void;
 }
 
+/** Human-readable header for a column: FK cols → singular table name; others → col name as-is */
+function colHeader(col: string, config: TableConfig): string {
+  const fk = config.fks.find((f) => f.column === col);
+  if (fk) return TABLE_SINGULAR[fk.refTable] ?? fk.refTable;
+  return col;
+}
+
 export function DataGrid({ config, rows, fkLabels, onEdit, onDelete }: Props) {
-  // Columns to show: skip individual recovery codes (show one combined column)
+  // Hide PK and individual recovery codes (recovery codes get one combined column)
   const visibleCols = config.columns
-    .filter((c) => !RECOVERY_COLS.has(c.name))
+    .filter((c) => c.name !== config.pk && !RECOVERY_COLS.has(c.name))
     .map((c) => c.name);
 
   const hasCodes = config.columns.some((c) => RECOVERY_COLS.has(c.name));
@@ -28,7 +36,7 @@ export function DataGrid({ config, rows, fkLabels, onEdit, onDelete }: Props) {
         <thead>
           <tr>
             {visibleCols.map((col) => (
-              <th key={col} style={styles.th}>{col}</th>
+              <th key={col} style={styles.th}>{colHeader(col, config)}</th>
             ))}
             {hasCodes && <th style={styles.th}>Recovery Codes</th>}
             <th style={{ ...styles.th, width: 90 }}>Actions</th>
