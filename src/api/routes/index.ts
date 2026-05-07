@@ -1,9 +1,8 @@
 import type { Hono } from "hono";
-import { resolve, dirname } from "path";
+import { resolve } from "path";
 import { mkdir, readdir, unlink } from "fs/promises";
-import { pbkdf2Sync, randomBytes, createCipheriv } from "crypto";
 import { TABLE_CONFIGS } from "../tableConfig.ts";
-import { listRows, getRow, insertRow, updateRow, deleteRow, getColumns, getDb, getDbPath } from "../db.ts";
+import { listRows, getRow, insertRow, updateRow, deleteRow, getColumns, getDb } from "../db.ts";
 import { maskRow, maskRows } from "../middleware/maskFields.ts";
 
 // Reverse-FK map: apiRoute → tables that reference it
@@ -55,44 +54,6 @@ export function mountRoutes(app: Hono): void {
       return c.json({ ok: true, filename, count: files.length, backups: files });
     } catch (e) {
       return c.json({ error: e instanceof Error ? e.message : "Backup failed" }, 500);
-    }
-  });
-
-  // Download an encrypted snapshot
-  // POST with { password: string } → AES-256-GCM encrypted .sqlite.enc
-  // File format: [salt:32][iv:12][authTag:16][ciphertext]
-  app.post("/api/backup/download", async (c) => {
-    try {
-      const { password } = await c.req.json<{ password: string }>();
-      if (!password || password.length < 1) {
-        return c.json({ error: "Password is required" }, 400);
-      }
-
-      await ensureBackupDir();
-      const tmpName = `.download-${Date.now()}.sqlite`;
-      const tmpPath = resolve(BACKUP_DIR, tmpName).replace(/\\/g, "/");
-      getDb().run(`VACUUM INTO '${tmpPath}'`);
-      const plainBytes = Buffer.from(await Bun.file(tmpPath).arrayBuffer());
-      await unlink(resolve(BACKUP_DIR, tmpName));
-
-      // Encrypt: PBKDF2 key derivation + AES-256-GCM
-      const salt = randomBytes(32);
-      const key  = pbkdf2Sync(password, salt, 100_000, 32, "sha256");
-      const iv   = randomBytes(12);
-      const cipher = createCipheriv("aes-256-gcm", key, iv);
-      const encrypted = Buffer.concat([cipher.update(plainBytes), cipher.final()]);
-      const tag = cipher.getAuthTag();
-      const output = Buffer.concat([salt, iv, tag, encrypted]);
-
-      const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-      const filename = `spider-${ts}.sqlite.enc`;
-      c.header("Content-Disposition", `attachment; filename="${filename}"`);
-      c.header("Content-Type", "application/octet-stream");
-      c.header("Content-Length", String(output.byteLength));
-      c.header("X-Filename", filename);
-      return c.body(output);
-    } catch (e) {
-      return c.json({ error: e instanceof Error ? e.message : "Download failed" }, 500);
     }
   });
 
